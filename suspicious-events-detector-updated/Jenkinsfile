@@ -1,0 +1,60 @@
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "suspicious-events-detector:latest"
+        DOCKER_REGISTRY = "index.docker.io/ahmad201218"
+        KUBE_CONFIG = credentials('kubeconfig-credentials-id')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE .'
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withDockerRegistry([credentialsId: 'docker-credentials-id', url: 'https://$DOCKER_REGISTRY']) {
+                    sh 'docker tag $DOCKER_IMAGE $DOCKER_REGISTRY/$DOCKER_IMAGE'
+                    sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-credentials-id', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl apply -f k8s/deployment.yaml'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit '**/target/surefire-reports/*.xml'
+            cleanWs()
+        }
+    }
+}

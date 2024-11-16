@@ -1,0 +1,10 @@
+
+[Pipeline] Start of Pipeline
+[Pipeline] Checkout SCM
+[Pipeline] Build
+[Pipeline] Test
+[Pipeline] Docker Build
+[Pipeline] Docker Push
+[Pipeline] Deploy to Kubernetes
+[Pipeline] End of Pipeline
+Pipeline Successful!
